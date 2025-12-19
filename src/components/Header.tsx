@@ -42,9 +42,12 @@ const Header = () => {
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full gradient-sunny flex items-center justify-center shadow-lg">
-              <span className="text-2xl">🌟</span>
-            </div>
+           <img
+  src="/logo.png"
+  alt="Little Junior DPS Logo"
+  className="w-12 h-12 rounded-full object-cover shadow-lg"
+/>
+
             <div>
               <h1 className="font-fredoka text-xl font-bold text-foreground">
                 Little Junior DPS
