@@ -1,7 +1,7 @@
 import { Phone, MessageCircle, MapPin } from "lucide-react";
 
 const FloatingButtons = () => {
-  const phoneNumber = "9742994570";
+  const phoneNumber = "9742994750";
 
   const buttons = [
     {
