@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/select";
 import { Send, Phone, Mail, MapPin } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+const API_URL = import.meta.env.VITE_API_URL || "https://littlejuniordps-backend.onrender.com";
 
 const Contact = () => {
   const { toast } = useToast();
@@ -35,62 +36,62 @@ const Contact = () => {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
+  e.preventDefault();
+  setIsSubmitting(true);
 
-    try {
-      // Actually call the backend API
-      const response = await fetch("http://localhost:3001/api/enquiry", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          childName: formData.childName,
-          childAge: formData.childAge,
-          parentName: formData.parentName,
-          phone: formData.phone,
-          email: formData.email,
-          class: formData.program,
-          message: formData.message,
-        }),
+  try {
+    // Use the API_URL constant
+    const response = await fetch(`${API_URL}/api/enquiry`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        childName: formData.childName,
+        childAge: formData.childAge,
+        parentName: formData.parentName,
+        phone: formData.phone,
+        email: formData.email,
+        class: formData.program,
+        message: formData.message,
+      }),
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      toast({
+        title: "Enquiry Submitted! 🎉",
+        description: "We'll get back to you within 24 hours.",
       });
 
-      const result = await response.json();
-
-      if (result.success) {
-        toast({
-          title: "Enquiry Submitted! 🎉",
-          description: "We'll get back to you within 24 hours.",
-        });
-
-        setFormData({
-          childName: "",
-          childAge: "",
-          parentName: "",
-          phone: "",
-          email: "",
-          program: "",
-          message: "",
-        });
-      } else {
-        toast({
-          title: "Submission Failed",
-          description: result.error || "Something went wrong. Please try again.",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error("Form submission error:", error);
+      setFormData({
+        childName: "",
+        childAge: "",
+        parentName: "",
+        phone: "",
+        email: "",
+        program: "",
+        message: "",
+      });
+    } else {
       toast({
-        title: "Network Error",
-        description: "Could not connect to server. Please check your connection.",
+        title: "Submission Failed",
+        description: result.error || "Something went wrong. Please try again.",
         variant: "destructive",
       });
-    } finally {
-      setIsSubmitting(false);
     }
-  };
+  } catch (error) {
+    console.error("Form submission error:", error);
+    toast({
+      title: "Network Error",
+      description: "Could not connect to server. Please try again.",
+      variant: "destructive",
+    });
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   const contactInfo = [
     {
