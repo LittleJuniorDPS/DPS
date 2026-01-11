@@ -1,4 +1,4 @@
-// server.js – With Absolute Path Fix
+// server.js – Production Ready for Render
 
 const express = require("express");
 const nodemailer = require("nodemailer");
@@ -11,7 +11,16 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 /* ---------------- Middleware ---------------- */
-app.use(cors());
+// Allow your frontend domain
+app.use(cors({
+  origin: [
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'https://littlejuniordps.com',
+    'https://www.littlejuniordps.com'
+  ],
+  credentials: true
+}));
 app.use(express.json());
 
 /* ---------------- Email Transport ---------------- */
@@ -30,30 +39,47 @@ transporter.verify(() => {
 /* ---------------- Google Sheets Setup ---------------- */
 const fs = require("fs");
 
-// Try to find service-account.json
-let SERVICE_ACCOUNT_PATH = path.join(__dirname, "service-account.json");
+// For Render: Use environment variable if available, else fall back to file
+let auth;
 
-console.log("📁 Looking for service account at:", SERVICE_ACCOUNT_PATH);
-
-// Check if file exists
-if (!fs.existsSync(SERVICE_ACCOUNT_PATH)) {
-  console.error("❌ File not found at:", SERVICE_ACCOUNT_PATH);
-  console.log("📂 Current directory:", __dirname);
-  console.log("📋 Files in directory:", fs.readdirSync(__dirname));
-  process.exit(1);
+if (process.env.GOOGLE_SERVICE_ACCOUNT_JSON) {
+  // In production (Render), use environment variable
+  console.log("🔑 Using service account from environment variable");
+  const serviceAccount = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_JSON);
+  auth = new google.auth.GoogleAuth({
+    credentials: serviceAccount,
+    scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+  });
+} else {
+  // In development, use file
+  const SERVICE_ACCOUNT_PATH = path.join(__dirname, "service-account.json");
+  console.log("📁 Looking for service account at:", SERVICE_ACCOUNT_PATH);
+  
+  if (!fs.existsSync(SERVICE_ACCOUNT_PATH)) {
+    console.error("❌ File not found at:", SERVICE_ACCOUNT_PATH);
+    process.exit(1);
+  }
+  
+  console.log("✅ Service account file found!");
+  auth = new google.auth.GoogleAuth({
+    keyFile: SERVICE_ACCOUNT_PATH,
+    scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+  });
 }
-
-console.log("✅ Service account file found!");
-
-const auth = new google.auth.GoogleAuth({
-  keyFile: SERVICE_ACCOUNT_PATH,
-  scopes: ["https://www.googleapis.com/auth/spreadsheets"],
-});
 
 const sheets = google.sheets({ version: "v4", auth });
 
-// YOUR ACTUAL SHEET ID
-const SHEET_ID = "1-lbK08_JbKTPZiJaUw56XvHqLBojKabd0kU1buSH2r8";
+const SHEET_ID = process.env.SHEET_ID || "1-lbK08_JbKTPZiJaUw56XvHqLBojKabd0kU1buSH2r8";
+
+/* ---------------- Health Check ---------------- */
+app.get("/", (req, res) => {
+  res.json({ 
+    status: "✅ Server is running!",
+    message: "Little Junior DPS Backend API",
+    timestamp: new Date().toISOString()
+  });
+});
+
 /* ---------------- Test Endpoint ---------------- */
 app.get("/test-sheets", async (req, res) => {
   try {
@@ -73,7 +99,7 @@ app.get("/test-sheets", async (req, res) => {
     res.status(500).json({ 
       success: false, 
       error: error.message,
-      hint: "Check: 1) service-account.json path correct? 2) Service account has Editor access?"
+      hint: "Check: 1) Service account credentials correct? 2) Service account has Editor access?"
     });
   }
 });
@@ -81,7 +107,7 @@ app.get("/test-sheets", async (req, res) => {
 /* ---------------- Enquiry API ---------------- */
 app.post("/api/enquiry", async (req, res) => {
   try {
-    console.log("\n📥 Received enquiry:", req.body);
+    console.log("\n🔥 Received enquiry:", req.body);
 
     const {
       childName,
@@ -134,7 +160,7 @@ app.post("/api/enquiry", async (req, res) => {
     await transporter.sendMail({
       from: `"Little Junior DPS" <${process.env.EMAIL_USER}>`,
       to: process.env.EMAIL_USER,
-      subject: `🔔 New Enquiry from ${parentName}`,
+      subject: `📋 New Enquiry from ${parentName}`,
       html: `
         <div style="font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5;">
           <div style="background: white; padding: 30px; border-radius: 10px; max-width: 600px;">
@@ -187,10 +213,9 @@ app.post("/api/enquiry", async (req, res) => {
 /* ---------------- Start Server ---------------- */
 app.listen(PORT, () => {
   console.log("\n" + "=".repeat(50));
-  console.log("🚀 Server running on http://localhost:" + PORT);
+  console.log("🚀 Server running on port:", PORT);
   console.log("📊 Sheet ID:", SHEET_ID.substring(0, 20) + "...");
   console.log("📧 Email:", process.env.EMAIL_USER);
-  console.log("📁 Service Account:", SERVICE_ACCOUNT_PATH);
-  console.log("=".repeat(50));
-  console.log("\n🧪 Test: http://localhost:" + PORT + "/test-sheets\n");
+  console.log("🌍 Environment:", process.env.NODE_ENV || "development");
+  console.log("=".repeat(50) + "\n");
 });
