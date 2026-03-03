@@ -98,7 +98,7 @@ const Contact = () => {
       icon: Phone,
       label: "Call Us",
       value: "+91 9742994570",
-      href: "tel:+919742994570",
+      href: "tel:+919742994750",
       color: "bg-grass",
     },
     {
